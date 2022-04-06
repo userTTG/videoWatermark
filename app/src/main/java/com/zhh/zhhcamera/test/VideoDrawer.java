@@ -161,6 +161,8 @@ public class VideoDrawer implements IDrawer {
       if (mMatrix != null) {
          return;
       }
+
+      //实现类似insideCrop效果
       if (mVideoWidth != -1 && mVideoHeight != -1 &&
               mWorldWidth != -1 && mWorldHeight != -1) {
          mMatrix = new float[floatLength];
