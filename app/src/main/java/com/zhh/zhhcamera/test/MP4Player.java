@@ -28,7 +28,7 @@ public class MP4Player implements Runnable {
     private MediaCodec mediaCodec;
     private MediaFormat mediaFormat;
     private Context context;
-    private boolean isDecodeFinish = false;
+    private volatile boolean isDecodeFinish = false;
     private long timeOfFrame = 30;
 
     public MP4Player(Context context, String path, Surface surface) {
@@ -78,7 +78,10 @@ public class MP4Player implements Runnable {
     @Override
     public void run() {
         // 解码 h264
-        decodeMP4();
+        try {
+            decodeMP4();
+        }catch (Exception ignore){
+        }
     }
 
     private void decodeMP4() {
@@ -128,6 +131,8 @@ public class MP4Player implements Runnable {
             mediaCodec.release();
             mediaExtractor.release();
             isDecodeFinish = true;
+            mediaCodec = null;
+            mediaExtractor = null;
         }
     }
 
