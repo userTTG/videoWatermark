@@ -49,12 +49,15 @@ class MainActivity : AppCompatActivity() {
                             Log.e(TAG, "surfaceCreated")
                             mp4Player = MP4Player(this@MainActivity,
                                 result?.get(0)?.realPath ,
-                                Surface(mMainBinding?.surfaceView?.videoDrawer?.surfaceTexture) )
+                                Surface(mMainBinding?.surfaceView?.testRender?.surfaceTexture) )
                             val size = mp4Player?.size;
                             if (size?.get(0) !=0 && size?.get(1)!=0){
                                 val layoutParam = mMainBinding?.surfaceView?.layoutParams
                                 layoutParam?.height = size?.get(1)!! * mMainBinding?.surfaceView?.width!! / size.get(0)
                                 mMainBinding?.surfaceView?.layoutParams = layoutParam
+                                mMainBinding?.surfaceView?.testRender?.setVideoSize(size.get(0),
+                                    size.get(1)
+                                )
                             }
                             mp4Player?.play()
                         }
