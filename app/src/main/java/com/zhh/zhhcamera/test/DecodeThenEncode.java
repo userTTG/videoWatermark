@@ -119,6 +119,8 @@ public class DecodeThenEncode{
         boolean inputDone = false;
         boolean encodeDone = false;
 
+        int encodeInputIndex = -1;
+
         int i =0;
         int count = 60;
 
@@ -143,37 +145,36 @@ public class DecodeThenEncode{
                 }
             }
             if (!encodeDone){
-                int encodeIndex = encoder.dequeueInputBuffer(TIMEOUT_US);
-                if (i<count){
-                    Log.e(TAG, "2 === encoder.dequeueInputBuffer: "+encodeIndex );
+                if (encodeInputIndex < 0){
+                    encodeInputIndex = encoder.dequeueInputBuffer(TIMEOUT_US);
+                    Log.e(TAG, "2 === encoder.dequeueInputBuffer: "+encodeInputIndex);
                 }
-                if (encodeIndex >= 0){
+                if (encodeInputIndex >= 0){
                     int index = decoder.dequeueOutputBuffer(info,TIMEOUT_US);
                     if (i<count){
                         Log.e(TAG, "2 === decoder.dequeueOutputBuffer: "+index );
                     }
                     if (index >= 0){
                         ByteBuffer byteBuffer = decoder.getOutputBuffer(index);
-                        ByteBuffer encodeBuffer = encoder.getInputBuffer(encodeIndex);
+                        ByteBuffer encodeBuffer = encoder.getInputBuffer(encodeInputIndex);
                         encodeBuffer.clear();
                         encodeBuffer.position(0);
                         encodeBuffer.limit(info.size);
                         encodeBuffer.put(byteBuffer);
                         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                            encoder.queueInputBuffer(encodeIndex,0,0,0,MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                            encoder.queueInputBuffer(encodeInputIndex,0,0,0,MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                             encodeDone = true;
                         }else {
-                            encoder.queueInputBuffer(encodeIndex,0,info.size,info.presentationTimeUs,0);
+                            encoder.queueInputBuffer(encodeInputIndex,0,info.size,info.presentationTimeUs,0);
                         }
                         decoder.releaseOutputBuffer(index,false);
                         if (i<count){
                             Log.e(TAG, "2 === decoder.releaseOutputBuffer: "+index );
                         }
                         i--;
+                        encodeInputIndex = -1;
                     }
                 }
-
-
             }
             boolean encoderOutputAvailable = true;
             while (encoderOutputAvailable){
