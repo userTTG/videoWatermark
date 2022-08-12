@@ -15,6 +15,7 @@ import com.luck.picture.lib.entity.LocalMedia
 import com.luck.picture.lib.interfaces.OnResultCallbackListener
 import com.zhh.zhhcamera.databinding.ActivityMainBinding
 import com.zhh.zhhcamera.pictureSelector.GlideEngine
+import com.zhh.zhhcamera.test.DecodeThenEncode
 import com.zhh.zhhcamera.test.MP4Player
 import java.util.ArrayList
 
@@ -42,6 +43,14 @@ class MainActivity : AppCompatActivity() {
 //                        GLVideoRender(this@MainActivity,
 //                            it.realPath)
 //                    })
+
+                    if(true){
+                        val encoder = DecodeThenEncode();
+                        encoder.setPath(result?.get(0)?.realPath);
+                        encoder.start()
+                        return
+                    }
+
                     mMainBinding?.surfaceView?.holder?.addCallback(object : SurfaceHolder.Callback {
                         var mp4Player:MP4Player? = null;
                         override fun surfaceCreated(holder: SurfaceHolder) {
