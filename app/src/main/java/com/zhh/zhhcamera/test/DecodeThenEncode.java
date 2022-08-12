@@ -81,7 +81,7 @@ public class DecodeThenEncode{
             MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, mediaFormat.getInteger("width"), mediaFormat.getInteger("height"));
             //颜色
             format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
-            format.setInteger(MediaFormat.KEY_FRAME_RATE,(int)timeOfFrame);//帧数
+            format.setInteger(MediaFormat.KEY_FRAME_RATE,mediaFormat.getInteger("frame-rate"));//帧数
             format.setInteger(MediaFormat.KEY_BIT_RATE,5000000);//比特率
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL,1);//i帧间隔
             //设置配置信息给mediaCodec
