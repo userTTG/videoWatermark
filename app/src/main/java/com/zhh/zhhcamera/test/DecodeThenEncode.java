@@ -4,6 +4,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaMuxer;
 import android.os.Environment;
 import android.util.Log;
@@ -67,22 +68,41 @@ public class DecodeThenEncode{
             e.printStackTrace();
         }
 
+        MediaMetadataRetriever retr = new MediaMetadataRetriever();
+        retr.setDataSource(path);
+        String width = retr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
+        String height = retr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
+        String rotation = retr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+        int videoWidth = Integer.parseInt(width);
+        int videoHeight = Integer.parseInt(height);
+        int videoRotation = Integer.parseInt(rotation);
+
+
         try {
             this.decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
 
             // 视频宽高暂时写死
 //            MediaFormat mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 1280, 720);
 //            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
+            mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
             decoder.configure(mediaFormat, null, null, 0);
 
 
             encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
+
             //视频信息配置
-            MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, mediaFormat.getInteger("width"), mediaFormat.getInteger("height"));
+            MediaFormat format;
+
+            if (videoRotation == 0 || videoRotation == 180){
+                format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, videoWidth, videoHeight);
+            }else {
+                format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, videoHeight, videoWidth);
+            }
+
             //颜色
             format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
             format.setInteger(MediaFormat.KEY_FRAME_RATE,mediaFormat.getInteger("frame-rate"));//帧数
-            format.setInteger(MediaFormat.KEY_BIT_RATE,5000000);//比特率
+            format.setInteger(MediaFormat.KEY_BIT_RATE,videoWidth * videoHeight * 6);//比特率
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL,1);//i帧间隔
             //设置配置信息给mediaCodec
             encoder.configure(format,null,null,MediaCodec.CONFIGURE_FLAG_ENCODE);
@@ -202,62 +222,6 @@ public class DecodeThenEncode{
         }
         release();
         ToastUtils.showShort("结束");
-    }
-
-    private void encodeH264(){
-        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-        while (true){
-            mLock.lock();
-            try {
-                if (encoder != null){
-                    //获取可用ByteBuffer下标
-                    int index = encoder.dequeueOutputBuffer(bufferInfo, -1);
-                    if(index>=0){
-                        ByteBuffer buffer = encoder.getOutputBuffer(index);
-                        byte[] outData=new byte[bufferInfo.size];
-                        Log.e(TAG, "encodeH264: "+bufferInfo.size );
-                        //给outData设置数据
-                        buffer.get(outData);
-                        //写入文件
-                        mMediaMuxer.writeSampleData(videoTrackIndex,buffer,bufferInfo);
-                        writeContent(outData);
-                        //释放资源
-                        encoder.releaseOutputBuffer(index,false);
-                    }
-                }
-            }finally {
-                mLock.unlock();
-            }
-        }
-    }
-
-    public   String writeContent(byte[] array) {
-        char[] HEX_CHAR_TABLE = {
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
-        };
-        StringBuilder sb = new StringBuilder();
-        for (byte b : array) {
-            sb.append(HEX_CHAR_TABLE[(b & 0xf0) >> 4]);
-            sb.append(HEX_CHAR_TABLE[b & 0x0f]);
-        }
-        FileWriter writer = null;
-        try {
-
-            writer = new FileWriter(Environment.getExternalStorageDirectory()+"/zhh_mp4.txt", true);
-            writer.write(sb.toString());
-            writer.write("\n");
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if(writer != null){
-                    writer.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return sb.toString();
     }
 
     public void release() {
