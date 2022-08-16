@@ -36,10 +36,10 @@ class TextureRender {
    private static final int TRIANGLE_VERTICES_DATA_UV_OFFSET = 3;
    private final float[] mTriangleVerticesData = {
            // X, Y, Z, U, V
-           -1.0f, -1.0f, 0, 0.f, 0.f,
-           1.0f, -1.0f, 0, 1.f, 0.f,
-           -1.0f,  1.0f, 0, 0.f, 1.f,
-           1.0f,  1.0f, 0, 1.f, 1.f,
+           -1.0f, -1.0f, 0, 0.f, 1.f,
+           1.0f, -1.0f, 0, 1.f, 1.f,
+           -1.0f, 1.0f, 0, 0.f, 0.f,
+           1.0f, 1.0f, 0, 1.f, 0.f,
    };
    private FloatBuffer mTriangleVertices;
    private static final String VERTEX_SHADER =

@@ -10,10 +10,13 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
 
+import com.blankj.utilcode.util.FileUtils;
 import com.blankj.utilcode.util.ToastUtils;
+import com.blankj.utilcode.util.Utils;
 import com.zhh.zhhcamera.gl.InputSurface;
 import com.zhh.zhhcamera.gl.OutputSurface;
 import com.zhh.zhhcamera.gl.VideoInfo;
+import com.zhh.zhhcamera.video.ZHHVideoUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -130,6 +133,7 @@ public class DecodeSurfaceEncode {
 //            MediaFormat mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 1280, 720);
 //            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
 
+//            outputSurface = new OutputSurface(info.width,info.height);
             outputSurface = new OutputSurface(info);
 
 //            TestRender render = new TestRender();
@@ -160,11 +164,19 @@ public class DecodeSurfaceEncode {
         decoder.start();
         encoder.start();
         mMediaMuxer.start();
-
-        ToastUtils.showShort("开始");
     }
 
     private void decodeThenEncode(){
+        ToastUtils.showShort("开始");
+        long startTime = System.currentTimeMillis();
+        String decodeInputFilePath = Environment.getExternalStorageDirectory()+"/zhh_decode_input.txt";
+        String decodeFilePath = Environment.getExternalStorageDirectory()+"/zhh_decode_out.txt";
+        String encodeFilePath = Environment.getExternalStorageDirectory()+"/zhh_encode_out.txt";
+
+        FileUtils.delete(decodeInputFilePath);
+        FileUtils.delete(decodeFilePath);
+        FileUtils.delete(encodeFilePath);
+
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         MediaCodec.BufferInfo outputInfo = new MediaCodec.BufferInfo();
         boolean done = false;
@@ -172,7 +184,7 @@ public class DecodeSurfaceEncode {
         boolean encodeDone = false;
 
         int i =0;
-        int count = 60;
+        int count = 0;
 
         while (!done) {
             if (!inputDone){
@@ -184,6 +196,7 @@ public class DecodeSurfaceEncode {
                 if (inputIndex>=0){
                     ByteBuffer byteBuffer = decoder.getInputBuffer(inputIndex);
                     byteBuffer.clear();
+//                    ZHHVideoUtils.writeContent(decodeInputFilePath,byteBuffer,true);
                     int sampleDataSize = mediaExtractor.readSampleData(byteBuffer,0);
                     if (sampleDataSize>0){
                         decoder.queueInputBuffer(inputIndex,0,sampleDataSize,mediaExtractor.getSampleTime(),0);
@@ -200,7 +213,14 @@ public class DecodeSurfaceEncode {
                     Log.e(TAG, "2 === decoder.dequeueOutputBuffer: "+index );
                 }
                 if (index >= 0){
-                    boolean doRender = info.size !=0 && info.presentationTimeUs - firstVideoTime>0;
+                    boolean doRender = info.size !=0;
+
+                    ByteBuffer byteBuffer = decoder.getOutputBuffer(index);
+                    byte[] bytes = new byte[info.size];
+                    byteBuffer.get(bytes, info.offset, info.size);
+
+//                    ZHHVideoUtils.writeContent(decodeFilePath,bytes,true);
+
                     decoder.releaseOutputBuffer(index, doRender);
                     if (doRender){
                         // This waits for the image and renders it after it arrives.
@@ -232,6 +252,14 @@ public class DecodeSurfaceEncode {
                         encoderOutputAvailable = false;
                     }
                     ByteBuffer encodeOutBuffer = encoder.getOutputBuffer(encodeOutIndex);
+
+                    byte[] bytes = new byte[outputInfo.size];
+                    encodeOutBuffer.get(bytes,outputInfo.offset,outputInfo.size);
+
+                    Log.e(TAG, "decodeThenEncode: "+outputInfo.size );
+
+//                    ZHHVideoUtils.writeContent(encodeFilePath,bytes,true);
+
                     if (outputInfo.presentationTimeUs != 0 && outputInfo.size != 0){
                         encodeOutBuffer.position(outputInfo.offset);
                         encodeOutBuffer.limit(outputInfo.offset + outputInfo.size);
@@ -243,6 +271,7 @@ public class DecodeSurfaceEncode {
         }
         release();
         ToastUtils.showShort("结束");
+        Log.e(TAG, "decodeThenEncode 耗时 " + (System.currentTimeMillis()  -startTime) + "ms" );
     }
 
     public void release() {

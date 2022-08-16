@@ -25,6 +25,9 @@ import android.opengl.Matrix;
 import android.util.Log;
 
 import com.blankj.utilcode.util.Utils;
+import com.zhh.zhhcamera.filter.AFilter;
+import com.zhh.zhhcamera.filter.NoFilter;
+import com.zhh.zhhcamera.filter.RotationOESFilter;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -94,8 +97,8 @@ public class TextureRender {
     //创建帧缓冲区
     private int[] fFrame = new int[1];
     private int[] fTexture = new int[2];
-//    AFilter mShow;
-//    RotationOESFilter rotationFilter;
+    AFilter mShow;
+    RotationOESFilter rotationFilter;
 //    GPUImageFilter mGpuFilter;
 //    GroupFilter mBeFilter;
     //第一段视频宽高(旋转后)
@@ -125,9 +128,9 @@ public class TextureRender {
         mTriangleVertices.put(mTriangleVerticesData).position(0);
         Matrix.setIdentityM(mSTMatrix, 0);
         Resources resources = Utils.getApp().getResources();
-//        mShow = new NoFilter(resources);
-//        mShow.setMatrix(MatrixUtils.flip(MatrixUtils.getOriginalMatrix(), false, true));
-//        rotationFilter = new RotationOESFilter(resources);
+        mShow = new NoFilter(resources);
+        mShow.setMatrix(MatrixUtils.flip(MatrixUtils.getOriginalMatrix(), false, true));
+        rotationFilter = new RotationOESFilter(resources);
 //        mBeFilter = new GroupFilter(resources);
 //        //默认加上水印 可以取消掉
 //        WaterMarkFilter waterMarkFilter = new WaterMarkFilter(resources);
@@ -135,8 +138,10 @@ public class TextureRender {
 //
 //        waterMarkFilter.setPosition(0, 70, 0, 0);
 //        mBeFilter.addFilter(waterMarkFilter);
-//        OM = MatrixUtils.getOriginalMatrix();
-//        MatrixUtils.flip(OM, false, false);//矩阵上下翻转
+
+        OM = MatrixUtils.getOriginalMatrix();
+        MatrixUtils.flip(OM, false, false);//矩阵上下翻转
+        mShow.setMatrix(OM);
 //        mBeFilter.setMatrix(OM);
     }
 
@@ -151,7 +156,7 @@ public class TextureRender {
     public void zoomDraw(SurfaceTexture st){
         EasyGlUtils.bindFrameTexture(fFrame[0], fTexture[0]);
         GLES20.glViewport(0, 0, viewWidth, viewHeight);
-//        rotationFilter.draw();
+        rotationFilter.draw();
         EasyGlUtils.unBindFrameBuffer();
 
 //        mBeFilter.setTextureId(fTexture[0]);
@@ -168,7 +173,8 @@ public class TextureRender {
         }
 //
 //        mShow.setTextureId(fTexture[mGpuFilter == null ? 0 : 1]);
-//        mShow.draw();
+        mShow.setTextureId(fTexture[0]);
+        mShow.draw();
         GLES20.glFinish();
     }
 
@@ -243,10 +249,10 @@ public class TextureRender {
                 GLES20.GL_CLAMP_TO_EDGE);
         checkGlError("glTexParameter");
 
-//        mShow.create();
-//        rotationFilter.create();
-//        rotationFilter.setTextureId(mTextureID);
-//
+        mShow.create();
+        rotationFilter.create();
+        rotationFilter.setTextureId(mTextureID);
+
 //        mBeFilter.create();
         GLES20.glGenFramebuffers(1, fFrame, 0);
 
@@ -260,7 +266,7 @@ public class TextureRender {
             viewHeight = info.width;
         }
 
-//        rotationFilter.setRotation(info.rotation);
+        rotationFilter.setRotation(info.rotation);
     }
 
     /**
@@ -349,7 +355,7 @@ public class TextureRender {
     }
 
     public void setVideoWidthAndHeight(VideoInfo info) {
-//        rotationFilter.setRotation(info.rotation);
+        rotationFilter.setRotation(info.rotation);
         if (info.rotation == 0 || info.rotation == 180) {
             this.videoWidth = info.width;
             this.videoHeight = info.height;

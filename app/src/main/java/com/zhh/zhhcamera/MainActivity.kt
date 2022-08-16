@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun selectPicture(){
-        if(true){
+        if(false){
             val encoder = DecodeEditEncodeTest();
             encoder.testVideoEdit720p();
             return
@@ -51,6 +51,11 @@ class MainActivity : AppCompatActivity() {
 //                            it.realPath)
 //                    })
 
+                    if(true){
+                        val encoder = DecodeSurfaceEncode();
+                        encoder.setPath(result?.get(0)?.realPath);
+                        return
+                    }
 
                     mMainBinding?.surfaceView?.holder?.addCallback(object : SurfaceHolder.Callback {
                         var mp4Player:MP4Player? = null;
