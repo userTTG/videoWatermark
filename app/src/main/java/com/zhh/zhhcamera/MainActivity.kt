@@ -13,6 +13,7 @@ import com.luck.picture.lib.basic.PictureSelector
 import com.luck.picture.lib.config.SelectMimeType
 import com.luck.picture.lib.entity.LocalMedia
 import com.luck.picture.lib.interfaces.OnResultCallbackListener
+import com.zhh.zhhcamera.ctstest.DecodeEditEncodeTest
 import com.zhh.zhhcamera.databinding.ActivityMainBinding
 import com.zhh.zhhcamera.pictureSelector.GlideEngine
 import com.zhh.zhhcamera.test.DecodeSurfaceEncode
@@ -34,6 +35,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun selectPicture(){
+        if(true){
+            val encoder = DecodeEditEncodeTest();
+            encoder.testVideoEdit720p();
+            return
+        }
         PictureSelector.create(this).openGallery(SelectMimeType.TYPE_VIDEO)
             .setImageEngine(GlideEngine.createGlideEngine())
             .setMaxSelectNum(1)
@@ -45,11 +51,6 @@ class MainActivity : AppCompatActivity() {
 //                            it.realPath)
 //                    })
 
-                    if(true){
-                        val encoder = DecodeSurfaceEncode();
-                        encoder.setPath(result?.get(0)?.realPath);
-                        return
-                    }
 
                     mMainBinding?.surfaceView?.holder?.addCallback(object : SurfaceHolder.Callback {
                         var mp4Player:MP4Player? = null;
