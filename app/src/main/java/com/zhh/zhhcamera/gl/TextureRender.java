@@ -139,9 +139,9 @@ public class TextureRender {
 //        waterMarkFilter.setPosition(0, 70, 0, 0);
 //        mBeFilter.addFilter(waterMarkFilter);
 
-        OM = MatrixUtils.getOriginalMatrix();
-        MatrixUtils.flip(OM, false, false);//矩阵上下翻转
-        mShow.setMatrix(OM);
+//        OM = MatrixUtils.getOriginalMatrix();
+//        MatrixUtils.flip(OM, false, false);//矩阵上下翻转
+//        mShow.setMatrix(OM);
 //        mBeFilter.setMatrix(OM);
     }
 
