@@ -1,15 +1,36 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
-        google()
-        mavenCentral()
+//        google()
+//        mavenCentral()
+
+        //阿里google()镜像
+        maven {
+            url "https://maven.aliyun.com/repository/google"
+        }
+        //阿里jcenter()central()镜像
+        maven {
+            url "https://maven.aliyun.com/repository/public"
+        }
+
+        maven { url 'https://jitpack.io' }
     }
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
-        mavenCentral()
+//        google()
+//        mavenCentral()
+        //阿里google()镜像
+        maven {
+            url "https://maven.aliyun.com/repository/google"
+        }
+        //阿里jcenter()central()镜像
+        maven {
+            url "https://maven.aliyun.com/repository/public"
+        }
+
+        maven { url 'https://jitpack.io' }
     }
 }
 rootProject.name = "ZhhCamera"

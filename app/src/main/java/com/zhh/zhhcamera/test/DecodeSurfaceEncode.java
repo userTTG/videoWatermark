@@ -41,14 +41,10 @@ public class DecodeSurfaceEncode {
     private MediaCodec encoder;
     private MediaFormat mediaFormat;
     private MediaMuxer mMediaMuxer;
-    private long timeOfFrame = 30;
     private int videoTrackIndex;
 
     private OutputSurface outputSurface = null;
     private InputSurface inputSurface = null;
-    private long firstVideoTime=0;
-
-    private ReentrantLock mLock = new ReentrantLock();
 
     public DecodeSurfaceEncode() {
 
@@ -85,8 +81,6 @@ public class DecodeSurfaceEncode {
             }
 
             int rate = mediaFormat.getInteger("frame-rate");
-            timeOfFrame = 1000/rate;
-            firstVideoTime = mediaExtractor.getSampleTime();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -129,19 +123,7 @@ public class DecodeSurfaceEncode {
 
 
             this.decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
-            // 视频宽高暂时写死
-//            MediaFormat mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, 1280, 720);
-//            mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 15);
-
-//            outputSurface = new OutputSurface(info.width,info.height);
             outputSurface = new OutputSurface(info);
-
-//            TestRender render = new TestRender();
-//            render.setVideoSize(info.width,info.height);
-//            render.onSurfaceCreated(null,null);
-//            render.onSurfaceChanged(null,info.width,info.height);
-
-            //new Surface(render.getSurfaceTexture())
 
             decoder.configure(mediaFormat, outputSurface.getSurface(), null, 0);
 
