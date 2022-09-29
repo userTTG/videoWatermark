@@ -46,6 +46,7 @@ public class DecodeThenEncode{
 
     public void setPath(String path){
         initCodec(path);
+        start();
     }
 
     private void initCodec(String path){
@@ -133,6 +134,7 @@ public class DecodeThenEncode{
     }
 
     private void decodeThenEncode(){
+        long startTime = System.currentTimeMillis();
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         MediaCodec.BufferInfo outputInfo = new MediaCodec.BufferInfo();
         boolean done = false;
@@ -222,6 +224,7 @@ public class DecodeThenEncode{
         }
         release();
         ToastUtils.showShort("结束");
+        Log.e(TAG, "decodeThenEncode 耗时 " + (System.currentTimeMillis()  -startTime) + "ms" );
     }
 
     public void release() {

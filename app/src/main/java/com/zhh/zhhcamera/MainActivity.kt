@@ -18,6 +18,7 @@ import com.zhh.zhhcamera.databinding.ActivityMainBinding
 import com.zhh.zhhcamera.pictureSelector.GlideEngine
 import com.zhh.zhhcamera.test.DecodeSurfaceEncode
 import com.zhh.zhhcamera.test.DecodeThenEncode
+import com.zhh.zhhcamera.test.DecodeThenEncode2
 import com.zhh.zhhcamera.test.MP4Player
 import java.util.ArrayList
 
@@ -52,7 +53,8 @@ class MainActivity : AppCompatActivity() {
 //                    })
 
                     if(true){
-                        val encoder = DecodeSurfaceEncode();
+                        val encoder = DecodeThenEncode();
+//                        val encoder = DecodeThenEncode2();
                         encoder.setPath(result?.get(0)?.realPath);
                         return
                     }

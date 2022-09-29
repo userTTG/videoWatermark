@@ -271,7 +271,7 @@ public class DecodeSurfaceEncode {
         }
         release();
         ToastUtils.showShort("结束");
-        Log.e(TAG, "decodeThenEncode 耗时 " + (System.currentTimeMillis()  -startTime) + "ms" );
+        Log.e(TAG, "decodeSurfaceThenEncode 耗时 " + (System.currentTimeMillis()  -startTime) + "ms" );
     }
 
     public void release() {
