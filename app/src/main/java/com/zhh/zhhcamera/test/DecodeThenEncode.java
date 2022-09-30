@@ -1,5 +1,6 @@
 package com.zhh.zhhcamera.test;
 
+import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
@@ -74,9 +75,11 @@ public class DecodeThenEncode{
         String width = retr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH);
         String height = retr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT);
         String rotation = retr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+        String bitrate = retr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE);
         int videoWidth = Integer.parseInt(width);
         int videoHeight = Integer.parseInt(height);
         int videoRotation = Integer.parseInt(rotation);
+        int videoBitrate = Integer.parseInt(bitrate);
 
 
         try {
@@ -103,15 +106,22 @@ public class DecodeThenEncode{
             //颜色
             format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
             format.setInteger(MediaFormat.KEY_FRAME_RATE,mediaFormat.getInteger("frame-rate"));//帧数
-            format.setInteger(MediaFormat.KEY_BIT_RATE,videoWidth * videoHeight * 6);//比特率
+            int maxSize = videoWidth*videoHeight*8;
+            Log.e(TAG, "0 === KEY_MAX_INPUT_SIZE: "+maxSize);
+            format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,maxSize);
+            //极低码率 宽*高*3/4
+            //低码率 宽*高*3/2
+            //中码率 宽*高*3
+            //高码率 宽*高*3*2
+            //极高码率 宽*高*3*4
+            Log.e(TAG, "0 === KEY_BIT_RATE: "+videoBitrate+"/"+(videoHeight*videoWidth*6));
+            format.setInteger(MediaFormat.KEY_BIT_RATE,videoHeight*videoWidth*6);//比特率
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL,1);//i帧间隔
             //设置配置信息给mediaCodec
             encoder.configure(format,null,null,MediaCodec.CONFIGURE_FLAG_ENCODE);
 
             mMediaMuxer = new MediaMuxer(Environment.getExternalStorageDirectory()+"/zhh.mp4",
                     MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-
-            videoTrackIndex = mMediaMuxer.addTrack(mediaFormat);
         } catch (Exception e) {
             // 解码芯片不支持，走软解
             e.printStackTrace();
@@ -126,7 +136,6 @@ public class DecodeThenEncode{
         }
         decoder.start();
         encoder.start();
-        mMediaMuxer.start();
 
         ToastUtils.showShort("开始");
 
@@ -177,12 +186,15 @@ public class DecodeThenEncode{
                         Log.e(TAG, "2 === decoder.dequeueOutputBuffer: "+index );
                     }
                     if (index >= 0){
-                        ByteBuffer byteBuffer = decoder.getOutputBuffer(index);
+                        Image image = decoder.getOutputImage(index);
+                        byte[] i420bytes = CameraUtil.getDataFromImage(image, CameraUtil.COLOR_FormatI420);
+                        decoder.getOutputImage(index);
                         ByteBuffer encodeBuffer = encoder.getInputBuffer(encodeInputIndex);
                         encodeBuffer.clear();
                         encodeBuffer.position(0);
+                        Log.e(TAG, "2 === ByteBuffer size: "+info.size );
                         encodeBuffer.limit(info.size);
-                        encodeBuffer.put(byteBuffer);
+                        encodeBuffer.put(i420bytes);
                         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                             encoder.queueInputBuffer(encodeInputIndex,0,0,0,MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                             encodeDone = true;
@@ -206,6 +218,15 @@ public class DecodeThenEncode{
                 }
                 if (encodeOutIndex == MediaCodec.INFO_TRY_AGAIN_LATER){
                     encoderOutputAvailable = false;
+                } else if (encodeOutIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED){
+                    MediaFormat newFormat = encoder.getOutputFormat();
+//                byte[] header_sps = {0, 0, 0, 1, 39, 100, 0, 31, -84, 86, -64, -120, 30, 105, -88, 8, 8, 8, 16};
+//                byte[] header_pps = {0, 0, 0, 1, 40, -18, 60, -80};
+//                encodeMediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(header_sps));
+//                encodeMediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(header_pps));
+//                encodeVideoTrackIndex = mMediaMuxer.addTrack(encodeMediaFormat);
+                    videoTrackIndex = mMediaMuxer.addTrack(newFormat);
+                    mMediaMuxer.start();
                 }else if (encodeOutIndex>0){
                     done = (outputInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
                     if (done) {
@@ -241,6 +262,10 @@ public class DecodeThenEncode{
         if (mediaExtractor != null){
             mediaExtractor.release();
             mediaExtractor = null;
+        }
+        if (mMediaMuxer != null){
+            mMediaMuxer.stop();
+            mMediaMuxer.release();
         }
 
     }
