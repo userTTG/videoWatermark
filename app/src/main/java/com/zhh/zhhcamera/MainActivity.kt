@@ -55,6 +55,15 @@ class MainActivity : AppCompatActivity() {
                     if(true){
                         val encoder = DecodeThenEncode();
 //                        val encoder = DecodeThenEncode2();
+                        encoder.setOnDecodeListener { bitmap->
+                            run {
+                                runOnUiThread {
+                                    mMainBinding?.ivPreview?.setImageBitmap(
+                                        bitmap
+                                    )
+                                }
+                            }
+                        }
                         encoder.setPath(result?.get(0)?.realPath);
                         return
                     }

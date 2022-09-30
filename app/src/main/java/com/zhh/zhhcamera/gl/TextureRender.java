@@ -17,6 +17,7 @@ package com.zhh.zhhcamera.gl;
  */
 
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
@@ -25,9 +26,11 @@ import android.opengl.Matrix;
 import android.util.Log;
 
 import com.blankj.utilcode.util.Utils;
+import com.zhh.zhhcamera.R;
 import com.zhh.zhhcamera.filter.AFilter;
 import com.zhh.zhhcamera.filter.NoFilter;
 import com.zhh.zhhcamera.filter.RotationOESFilter;
+import com.zhh.zhhcamera.test.ShaderUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -56,7 +59,19 @@ public class TextureRender {
             -1.0f, 1.0f, 0, 0.f, 0.f,
             1.0f, 1.0f, 0, 1.f, 0.f,
     };
-    private FloatBuffer mTriangleVertices;
+    private final float[] bitmapTexVert = {
+        0,0,
+        0,3,
+        3,3,
+        3,0
+    };
+    private final float[] bitmapVert = {
+        -1,1,0,
+        -1,0,0,
+        0,0,0,
+        0,1,0
+    };
+    private FloatBuffer mTriangleVertices,bitmapTexBuffer,bitmapBuffer;
     private static final String VERTEX_SHADER =
             "uniform mat4 uMVPMatrix;\n" +
                     "uniform mat4 uSTMatrix;\n" +
@@ -120,6 +135,8 @@ public class TextureRender {
      */
     private float[] OM;
 
+    int textureId;
+
     public TextureRender(VideoInfo info) {
         this.info=info;
         mTriangleVertices = ByteBuffer.allocateDirect(
@@ -143,6 +160,14 @@ public class TextureRender {
 //        MatrixUtils.flip(OM, false, false);//矩阵上下翻转
 //        mShow.setMatrix(OM);
 //        mBeFilter.setMatrix(OM);
+        Bitmap bitmap = BitmapFactory.decodeResource(Utils.getApp().getResources(),R.drawable.pikachu);
+        textureId = ShaderUtil.loadBitmapTexture(bitmap);
+        bitmapTexBuffer = ByteBuffer.allocateDirect(bitmapTexVert.length *FLOAT_SIZE_BYTES)
+                .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        bitmapTexBuffer.put(bitmapTexVert).position(0);
+        bitmapBuffer = ByteBuffer.allocateDirect(bitmapVert.length *FLOAT_SIZE_BYTES)
+                .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        bitmapBuffer.put(bitmapVert).position(0);
     }
 
     public int getTextureId() {
@@ -175,6 +200,24 @@ public class TextureRender {
 //        mShow.setTextureId(fTexture[mGpuFilter == null ? 0 : 1]);
         mShow.setTextureId(fTexture[0]);
         mShow.draw();
+
+        GLES20.glEnableVertexAttribArray(maPositionHandle);
+        GLES20.glVertexAttribPointer(maPositionHandle, 3, GLES20.GL_FLOAT, false,
+                0, bitmapBuffer);
+
+        int mPositionTexHandle = GLES20.glGetAttribLocation(mProgram, "aTextureCoord");
+
+        GLES20.glEnableVertexAttribArray(mPositionTexHandle);
+        GLES20.glVertexAttribPointer(mPositionTexHandle,2,GLES20.GL_FLOAT,false,0,bitmapTexBuffer);
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,textureId);
+
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_FAN,0,4);
+
+        GLES20.glDisableVertexAttribArray(maPositionHandle);
+        GLES20.glDisableVertexAttribArray(mPositionTexHandle);
+
         GLES20.glFinish();
     }
 

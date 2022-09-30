@@ -1,5 +1,7 @@
 package com.zhh.zhhcamera.test;
 
+import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -38,11 +40,18 @@ public class DecodeThenEncode{
     private MediaMuxer mMediaMuxer;
     private long timeOfFrame = 30;
     private int videoTrackIndex;
+    int videoRotation = 0;
 
     private ReentrantLock mLock = new ReentrantLock();
 
+    private OnDecodeListener onDecodeListener;
+
     public DecodeThenEncode() {
 
+    }
+
+    public void setOnDecodeListener(OnDecodeListener onDecodeListener) {
+        this.onDecodeListener = onDecodeListener;
     }
 
     public void setPath(String path){
@@ -78,9 +87,8 @@ public class DecodeThenEncode{
         String bitrate = retr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE);
         int videoWidth = Integer.parseInt(width);
         int videoHeight = Integer.parseInt(height);
-        int videoRotation = Integer.parseInt(rotation);
         int videoBitrate = Integer.parseInt(bitrate);
-
+        videoRotation = Integer.parseInt(rotation);
 
         try {
             this.decoder = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
@@ -97,14 +105,16 @@ public class DecodeThenEncode{
             //视频信息配置
             MediaFormat format;
 
-            if (videoRotation == 0 || videoRotation == 180){
-                format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, videoWidth, videoHeight);
-            }else {
-                format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, videoHeight, videoWidth);
-            }
+//            if (videoRotation == 0 || videoRotation == 180){
+//                format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, videoWidth, videoHeight);
+//            }else {
+//                format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, videoHeight, videoWidth);
+//            }
+
+            format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, videoWidth, videoHeight);
 
             //颜色
-            format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible);
+            format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar);
             format.setInteger(MediaFormat.KEY_FRAME_RATE,mediaFormat.getInteger("frame-rate"));//帧数
             int maxSize = videoWidth*videoHeight*8;
             Log.e(TAG, "0 === KEY_MAX_INPUT_SIZE: "+maxSize);
@@ -187,14 +197,22 @@ public class DecodeThenEncode{
                     }
                     if (index >= 0){
                         Image image = decoder.getOutputImage(index);
-                        byte[] i420bytes = CameraUtil.getDataFromImage(image, CameraUtil.COLOR_FormatI420);
+                        Rect rect = image.getCropRect();
+                        int imageFormat = image.getFormat();
+                        byte[] i420bytes = VideoUtil.getDataFromImage(image, VideoUtil.COLOR_FormatI420);
                         decoder.getOutputImage(index);
                         ByteBuffer encodeBuffer = encoder.getInputBuffer(encodeInputIndex);
                         encodeBuffer.clear();
                         encodeBuffer.position(0);
-                        Log.e(TAG, "2 === ByteBuffer size: "+info.size );
-                        encodeBuffer.limit(info.size);
+                        //24883200
+                        Log.e(TAG, "2 === ByteBuffer size: "+encodeBuffer.remaining() + "/"+i420bytes.length +",image format "+imageFormat);
                         encodeBuffer.put(i420bytes);
+
+                        if (onDecodeListener != null){
+                            byte[] nv21 = VideoUtil.I420Tonv21(i420bytes,rect.width(),rect.height());
+                            onDecodeListener.onOutput(VideoUtil.getBitmapImageFromYUV(nv21,rect.width(),rect.height()));
+                        }
+
                         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                             encoder.queueInputBuffer(encodeInputIndex,0,0,0,MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                             encodeDone = true;
@@ -207,6 +225,9 @@ public class DecodeThenEncode{
                         }
                         i--;
                         encodeInputIndex = -1;
+                    }else if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED){
+                        MediaFormat newFormat = decoder.getOutputFormat();
+                        Log.e(TAG, "2 === decodeThenEncode format: " + newFormat.toString() );
                     }
                 }
             }
@@ -225,6 +246,10 @@ public class DecodeThenEncode{
 //                encodeMediaFormat.setByteBuffer("csd-0", ByteBuffer.wrap(header_sps));
 //                encodeMediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(header_pps));
 //                encodeVideoTrackIndex = mMediaMuxer.addTrack(encodeMediaFormat);
+
+//                    newFormat.setInteger(MediaFormat.KEY_WIDTH,640);
+//                    newFormat.setInteger(MediaFormat.KEY_HEIGHT,300);
+                    newFormat.setInteger(MediaFormat.KEY_ROTATION,videoRotation);
                     videoTrackIndex = mMediaMuxer.addTrack(newFormat);
                     mMediaMuxer.start();
                 }else if (encodeOutIndex>0){
@@ -275,6 +300,10 @@ public class DecodeThenEncode{
             return new int[]{mediaFormat.getInteger("width"), mediaFormat.getInteger("height")};
         }
         return new int[]{0, 0};
+    }
+
+    public static interface OnDecodeListener{
+        public void onOutput(Bitmap bitmap);
     }
 
 }
